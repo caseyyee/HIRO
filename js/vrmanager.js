@@ -152,7 +152,7 @@ window.VRManager = (function() {
       // We'll do this elsewhere eventually
       newTab.start();
 
-      self.transition.fadeIn(self.renderFadeIn);
+      // self.transition.fadeIn(self.renderFadeIn);
       
       var title = new VRTitle(self.title, self.titleTemplate, siteInfo);
 
@@ -164,12 +164,13 @@ window.VRManager = (function() {
   VRManager.prototype.enableVR = function () {
     var self = this;
     if (self.vrIsReady) {
-      self.cursor.enable();
+      
       self.container.mozRequestFullScreen({ vrDisplay: self.hmdDevice });
       document.body.mozRequestPointerLock();
       requestAnimationFrame(self.stageFrame.bind(self));
-      VRHud.start();
-      self.cursor.enable();
+      // VRHud.start();
+      self.load('./content/cubes/index.html')
+      // self.cursor.enable();
     }
   };
 
