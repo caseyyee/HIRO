@@ -22,31 +22,19 @@ var Tile = function (name, url, cords, siteInfo) {
 };
 
 
-// var VRGrid = function(opts) {
-//   self.items = [];
-//   self.layout = 'plane'; // 'cylinder'
-//   self.width = 100;
-//   self.height = 20;
-//   self.gutter = 0.5;
-//   self.cols = 10;
-//   self.rows = 2;
-//   self.position = { x: 0, y: 0, z: -30 }
-//   self.registration = 'top left' // top right bottom left front back center
-// }
-
-// item {
-//   position: {
-//     x: 0, y: 0
-//   },
-//   width: 1,
-//   height: 1,
-//   registration: 'top left' // center bottom top left right
-// }
 
 
-// newGrid.prototype.newGrid.calculateLayout = function() {
-//   // recalculate layout
-// }
+
+var VRGrid = function(opts) {
+  self.items = [];
+  // self.projection = cylinder || plane
+  self.width = 100;
+  self.height = 20;
+  self.cols = 10;
+  self.rows = 2;
+  self.position = { x: 0, y: 0, z: 0 }
+}
+
 
 
 
