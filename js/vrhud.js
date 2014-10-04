@@ -4,8 +4,39 @@ var Tile = function (name, url, cords, siteInfo) {
   self.name = name;
   self.url = url;
   self.cords = cords;
-  self.mesh = null;
+  self.gridEl = createGridTile();
+  self.titleEl = createTitle();
   self.siteInfo = siteInfo;
+
+  function createTitle() {
+    var div = document.createElement('div');
+    return div;
+  }
+
+  function createGridTile() {
+    var div = document.createElement('div');
+    var label = null;
+
+    // create a link for label if present
+    if (self.url !== undefined) {
+      label = document.createElement('a');  
+      label.href = self.url;
+      label.appendChild(document.createTextNode(self.name));
+    } else {
+      label = document.createTextNode(self.name);
+    }
+
+    div.appendChild(label);
+    div.classList.add('fav','threed');
+    div.addEventListener('click', function(e) {
+      if (VRHud.running) {
+        VRHud.load(self);
+      }
+    });
+
+    VRManager.cursor.addHitElement(div);
+    return div;
+  }
 
   self.getSiteInfo = function() {
     var info = { 
@@ -22,29 +53,13 @@ var Tile = function (name, url, cords, siteInfo) {
 };
 
 
-
-
-
-var VRGrid = function(opts) {
-  self.items = [];
-  // self.projection = cylinder || plane
-  self.width = 100;
-  self.height = 20;
-  self.cols = 10;
-  self.rows = 2;
-  self.position = { x: 0, y: 0, z: 0 }
-}
-
-
-
-
 // requires Velocity
 var Grid = function (opts) {
   var self = this;
   self.opts = opts;
   self.tiles = [];
   self.cols = self.rows = 0;                // max grid extents
-  self.scene = opts.scene;          // container where this grid will be injected into.
+  self.container = opts.container;          // container where this grid will be injected into.
   self.el = document.createElement('div');  // element for grid contents
   self.underlay = null;
   return self;
@@ -56,9 +71,11 @@ Grid.prototype.addTile = function (tile) {
   if (tile.cords.x + tile.cords.w > this.cols) {
     this.cols = tile.cords.x + tile.cords.w;
   }
+
   if (tile.cords.y + tile.cords.h > this.rows) {
     this.rows = tile.cords.y + tile.cords.h;
   }
+
   this.tiles.push(tile);
 };
 
@@ -66,103 +83,38 @@ Grid.prototype.addTile = function (tile) {
 Grid.prototype.render = function () {
   var self = this;
   var opts  = self.opts, tiles = self.tiles;
-  var rotPerTile = self.rotPerTile = Math.sin((opts.tileWidth + opts.tileGutter) / opts.radius);
+  var rotPerTile = self.rotPerTile = Math.sin((opts.tileWidth + opts.tileGutter) / opts.radius) * (180 / Math.PI);
   var i, tile;
 
   function addToContainer(tile) {
     var col = tile.cords.x,
       row = tile.cords.y;
 
-    // calculate coordinates for layout 
-    // todo: move somewhere else so that we are not recalculating for every tile added.
-    // var rotOffset = (rotPerTile * self.cols) / 2, // rotation offset to center entire grid on viewport.
-    var rotOffset = 0, // rotation offset to center entire grid on viewport.
-    
-      // transYOffset = (self.rows * opts.tileHeight) / 2, // offset to arrange vertically on viewport.
-      transYOffset = 0, // offset to arrange vertically on viewport.
-    
-    // calculate coordinates for tile  
-    rotY = (tile.cords.x * rotPerTile - rotOffset), 
-    transY = (row * (opts.tileHeight + opts.tileGutter) + transYOffset) * -1, // vertical translation from axis
-    transZ = opts.radius * -1;  // depth of tile from axis
+    // calculate correct positioning of tile
+    var rotOffset = (rotPerTile * self.cols) / 2,
+      transYOffset = (self.rows * opts.tileHeight) / 2,
+      rotY = (col * rotPerTile - rotOffset) * -1,
+      transY = (row * (opts.tileHeight + opts.tileGutter) - transYOffset),
+      transZ = opts.radius * -1;
 
-    // set coordinates of individual tile.
-    var w = (tile.cords.w * opts.tileWidth) + ((tile.cords.w - 1) * opts.tileGutter),
-      h = (tile.cords.h * opts.tileHeight) + ((tile.cords.h - 1) * opts.tileGutter);
+    // add those to tile object
+    tile.cords.rotateY = rotY + 'deg';
+    tile.cords.translateY = transY + 'rem';
+    tile.cords.translateZ = transZ + 'rem';
 
-    var geometry = new THREE.PlaneGeometry( w, h );
-
-    // geometry.applyMatrix( new THREE.Matrix4().makeTranslation( 0, transY, transZ ) );
-
-    var material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
-    var mesh = new THREE.Mesh( geometry, material );
-
-    // mesh.position.z = transZ;
-    var x = Math.sin( rotY ) * opts.radius;
-    var z = (Math.cos( rotY ) * opts.radius) * -1;
-    
-    mesh.position.z = z;
-    mesh.position.x = x;
-    mesh.position.y = transY;
-    mesh.rotation.y = rotY*-1;
-    console.log(x, z, rotY)
-    // create link and label for plane
-    // self.url  self.name
-    
-    // handle clicks to plane
-    // div.addEventListener('click', function(e) {
-    //   if (VRHud.running) {
-    //     VRHud.load(self);
-    //   }
-    // });
-
-    // VRManager.cursor.addHitElement(div);
-
-    // place mesh
-    // tile.cords.rotateY = rotY + 'deg';
-    // tile.cords.translateY = transY + 'rem';
-    // tile.cords.translateZ = transZ + 'rem';
-
-
-
-
-    // mesh.translateOnAxis( new THREE.Vector3(0,0,1).normalize(), transZ );
-    
-    // mesh.rotateOnAxis( new THREE.Vector3(0,1,0).normalize(), rotY );
-    
     // use velocity hook to place element
-    // Velocity.hook(tile.gridEl, 'rotateY', tile.cords.rotateY);
-    // Velocity.hook(tile.gridEl, 'translateY', tile.cords.translateY);
-    // Velocity.hook(tile.gridEl, 'translateZ', tile.cords.translateZ);
-    // Velocity.hook(tile.gridEl, 'scaleX', 0);
-    // Velocity.hook(tile.gridEl, 'scaleY', 0);
+    Velocity.hook(tile.gridEl, 'rotateY', tile.cords.rotateY);
+    Velocity.hook(tile.gridEl, 'translateY', tile.cords.translateY);
+    Velocity.hook(tile.gridEl, 'translateZ', tile.cords.translateZ);
+    Velocity.hook(tile.gridEl, 'scaleX', 0);
+    Velocity.hook(tile.gridEl, 'scaleY', 0);
 
     // set element dimensions
-    // tile.gridEl.style.width = (tile.cords.w * opts.tileWidth) + ((tile.cords.w - 1) * opts.tileGutter) + 'rem';
-    // tile.gridEl.style.height = (tile.cords.h * opts.tileHeight) + ((tile.cords.h - 1) * opts.tileGutter) + 'rem';
+    tile.gridEl.style.width = (tile.cords.w * opts.tileWidth) + ((tile.cords.w - 1) * opts.tileGutter) + 'rem';
+    tile.gridEl.style.height = (tile.cords.h * opts.tileHeight) + ((tile.cords.h - 1) * opts.tileGutter) + 'rem';
 
-    //self.container.appendChild(tile.gridEl);
-    
-    self.scene.add( mesh );
+    self.container.appendChild(tile.gridEl);
   }
-
-  // var geometry = new THREE.PlaneGeometry( 10, 10 );
-  // var material = new THREE.MeshBasicMaterial( {color: 0x0000ff, side: THREE.DoubleSide} );
-  // var mesh = new THREE.Mesh( geometry, material );
-  // mesh.position.z = -30;
-  // self.scene.add( mesh );
-
-  // var geometry = new THREE.PlaneGeometry( 10, 10 );
-  // var material = new THREE.MeshBasicMaterial( {color: 0xff0000, side: THREE.DoubleSide} );
-  // var mesh = new THREE.Mesh( geometry, material );
-  // // mesh.position.x = -20;
-  // // mesh.position.z = -30;
-  // mesh.translateOnAxis( new THREE.Vector3(0,0,1).normalize(), -20 );
-  // mesh.rotateOnAxis( new THREE.Vector3(0,1,0).normalize(), 45*(Math.PI/180) );
-
-
-  // self.scene.add( mesh );
-
 
   for (i = 0; i < tiles.length; i++) {
     tile = tiles[i];
@@ -175,39 +127,18 @@ window.VRHud = (function() {
   function VRHud() {
     var self = this;
     self.container = VRManager.hud;
-
-    // three.js setup
-    self.renderer = new THREE.WebGLRenderer( { alpha: true } );
-    self.renderer.setClearColor( 0x000000, 0 );
-    
-    self.container.appendChild( self.renderer.domElement );
-
-    self.scene = new THREE.Scene();
-    self.camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
-    self.controls = new THREE.VRControls( self.camera );
-    self.effect = new THREE.VREffect( self.renderer );
-
-    self.effect.setSize( window.innerWidth, window.innerHeight );
-
-    // temp center point for ref.
-    var geometry = new THREE.PlaneGeometry( 1, 1 );
-    var material = new THREE.MeshBasicMaterial( {color: 0x0000ff, side: THREE.DoubleSide} );
-    var mesh = new THREE.Mesh( geometry, material );
-    mesh.position.z = -28;
-    self.scene.add( mesh );
-
-
-    // self.running = false;
-    // self.currentSelection = null;
-    // self.transitioning = false; // true if animation is running
+    self.running = false;
+    self.currentSelection = null;
+    self.transitioning = false; // true if animation is running
 
     self.grid = new Grid({
+      units: 'rem', // units to use for grid
       tileWidth: 3.5, //  tile width and height.
       tileHeight: 3.5,
       tileGutter: 0.10, //  space between tiles.
       tileTransitionDepth: 5, //  relative depth of tile when highlighted or selected.
       radius: 30, //  how far out to place the HUD from user.
-      scene: self.scene
+      container: self.container.querySelector('#grid')
     });
 
     self.grid.addTile(
@@ -229,25 +160,13 @@ window.VRHud = (function() {
       new Tile('Interstitial', './Interstitial/spatial/index.html', { x: 0, y: 3, w: 1, h: 1 }, { '.author': 'Josh Carpenter', '.tech': 'Cinema 4D, VR Dom'})
     );
     self.grid.addTile(
-      new Tile('Intro', './sequence/1/index.html', { x: 1, y: 3, w: 1, h: 1 }, { '.author': 'Josh Carpenter', '.tech': 'Cinema 4D, VR Dom'})
+      new Tile('Startup', './content/startup/index.html', { x: 1, y: 3, w: 1, h: 1 }, { '.author': 'Josh Carpenter', '.tech': 'Three.js, tween.js'})
     );
     
     self.grid.render();
 
     return self;
   };
-
-  VRHud.prototype.animate = function() {
-    var self = this;
-    self.render();
-    requestAnimationFrame(self.animate.bind(self));
-  };
-
-  VRHud.prototype.render = function() {
-    this.controls.update();
-    this.effect.render( this.scene, this.camera );
-  }
-
 
   VRHud.prototype.start = function() {
     if (this.transitioning) {
