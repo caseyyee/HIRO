@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>3D GUI</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #f0f0f0;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			table {
+				display: inline;
+				border-collapse: collapse;
+				float: left;
+			}
+			
+			tr, td {
+				padding: 0px;
+			}
+			
+			#layout {
+				position: absolute;
+				float: left;
+			}
+			
+			#layout div {
+				float: left;
+			}
+
+			#layout .preview {
+				width: 384px;
+				height: 192px;
+				margin: 0px 32px;
+				background: red;
+			}
+
+			#layout .button {
+				width: 64px;
+				height: 64px;
+				background: blue;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="layout">
+			<table>
+				<tr>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+				</tr>
+				<tr>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+				</tr>
+				<tr>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+				</tr>
+			</table>
+			<div class="preview"></div>
+			<table>
+				<tr>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+				</tr>
+				<tr>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+				</tr>
+				<tr>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+					<td><div class="button"></div></td>
+				</tr>
+			</table>
+		</div>
+
+		<script src="js/vendor/three.min.js"></script>
+
+		<script src="js/vendor/VRControls.js"></script>
+		<script src="js/vendor/VREffect.js"></script>
+
+		<script src="js/vendor/DeviceOrientationControls.js"></script>
+		<script src="js/vendor/StereoEffect.js"></script>
+
+		<script src="gui.js"></script>
+
+		<script>
+
+			var parameters = ( function () {
+				var parameters = {};
+				var parts = window.location.search.substr( 1 ).split( '&' );
+				for ( var i = 0; i < parts.length; i ++ ) {
+					var parameter = parts[ i ].split( '=' );
+					parameters[ parameter[ 0 ] ] = parameter[ 1 ];
+				}
+				return parameters;
+			} )();
+
+			var camera, scene, renderer;
+			var controls, effect;
+
+			init();
+			animate();
+
+			function init() {
+
+				renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true } );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.body.appendChild( renderer.domElement );
+
+				scene = new THREE.Scene();
+
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
+				
+				controls = new THREE.DeviceOrientationControls( camera );
+				
+				if ( parameters.mode === 'cardboard' ) {
+
+					controls = new THREE.DeviceOrientationControls( camera );
+					effect = new THREE.StereoEffect( renderer );
+
+				} else {
+
+					controls = new THREE.VRControls( camera );
+					effect = new THREE.VREffect( renderer );
+
+				}
+				
+				effect.setSize( window.innerWidth, window.innerHeight );
+
+				document.body.addEventListener( 'dblclick', function () {
+
+					effect.setFullScreen( true );
+
+				} );
+
+				//
+
+				var layout = new GUI.Layout( renderer.domElement, camera );
+				scene.add( layout );
+
+				var geometry = new THREE.PlaneGeometry( 1, 1 );
+				
+				//
+
+				var dom = document.getElementById( 'layout' ); // get layout
+				var elements = dom.getElementsByTagName( 'div' ); // get all divs
+				
+				var rect = dom.getBoundingClientRect();
+				var offset = new THREE.Vector2( rect.width / 2, rect.height / 2 );
+				
+				for ( var i = 0; i < elements.length; i ++ ) {
+				
+					var element = elements[ i ];
+					var rect = element.getBoundingClientRect();
+					
+					var material = new THREE.MeshBasicMaterial( { color: Math.random() * 0xffffff, wireframe: true } );
+					
+					var x = rect.left + ( rect.width / 2 ) - offset.x;
+					var y = rect.top + ( rect.height / 2 ) - offset.y;
+					
+					var button = new GUI.Element( geometry, material );
+					button.position.set( x, - y, 0 );
+					button.scale.set( rect.width, rect.height, 1 );
+					button.userData.position = new THREE.Vector2( x, y );
+					button.addEventListener( 'mouseover', function ( event ) {
+
+						this.material.wireframe = false;
+
+					} );
+					button.addEventListener( 'mouseout', function ( event ) {
+
+						this.material.wireframe = true;
+
+					} );
+					layout.add( button );
+
+				}
+
+				bend( layout, 500 );
+
+				// dom.style.display = 'none'; // hide dom
+
+			}
+			
+			function bend( group, amount ) {
+			
+				var vector = new THREE.Vector3();
+			
+				for ( var i = 0; i < group.children.length; i ++ ) {
+				
+					var element = group.children[ i ];
+					
+					element.position.x = Math.sin( element.userData.position.x / amount ) * amount;
+					element.position.z = - Math.cos( element.userData.position.x / amount ) * amount;
+					element.lookAt( vector.set( 0, element.position.y, 0 ) );
+				
+				}
+			
+			}
+			
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				controls.update();
+
+				effect.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>
