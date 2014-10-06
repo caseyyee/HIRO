@@ -11,13 +11,8 @@ function VRUi(container) {
 	// main
 	this.initSettings();
 	this.initRenderer();
-
-		
 		
 	self.start();
-	
-
-
 
 	return this;
 };
@@ -99,7 +94,6 @@ VRUi.prototype.initRenderer = function() {
 }
 
 VRUi.prototype.start = function() {
-
 	this.active = true;
 	this.animate();
 }

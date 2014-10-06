@@ -25,8 +25,8 @@ VRHud.prototype.initLayout = function(dom, camera, favorites) {
 			
 			tex.repeat.x = fav.ui.width / tex.image.width;
 			tex.repeat.y = fav.ui.height / tex.image.height;
-			tex.offset.x = (fav.ui.x / tex.image.width);
-			tex.offset.y = (fav.ui.y / tex.image.height);
+			tex.offset.x = fav.ui.x / tex.image.width;
+			tex.offset.y = fav.ui.y / tex.image.height;
 			
 			tex.needsUpdate = true;
 			var material = new THREE.MeshBasicMaterial({ map : tex });
