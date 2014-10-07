@@ -3,8 +3,8 @@
 function VRHud() {
 };
 
-VRHud.prototype.initLayout = function(dom, camera, favorites) {
-	var layout = new GUI.Layout( dom, camera );
+VRHud.prototype.init = function(dom, camera, favorites) {
+	var layout = new THREE.Group( dom, camera );
 	var geometry = new THREE.PlaneGeometry( 1, 1 );
 	var texture = null;
 	
@@ -20,28 +20,40 @@ VRHud.prototype.initLayout = function(dom, camera, favorites) {
 		for (i = 0; i < favorites.length; i++) {
 			fav = favorites[i];
 			
-			//var material = new THREE.MeshBasicMaterial( { color: Math.random() * 0xffffff, wireframe: true } );
 			var tex = texture.clone();
-			
 			tex.repeat.x = fav.ui.width / tex.image.width;
 			tex.repeat.y = fav.ui.height / tex.image.height;
 			tex.offset.x = fav.ui.x / tex.image.width;
-			tex.offset.y = fav.ui.y / tex.image.height;
-			
+			tex.offset.y = 1 - ((fav.ui.y + fav.ui.height) / tex.image.height );
 			tex.needsUpdate = true;
+
 			var material = new THREE.MeshBasicMaterial({ map : tex });
 			
-			// var x = rect.left + ( rect.width / 2 ) - offset.x;
-			// var y = rect.top + ( rect.height / 2 ) - offset.y;
-
-			console.log(fav.ui);
 			var x = fav.ui.x;
 			var y = fav.ui.y;
 			
-			var button = new GUI.Element( geometry, material );
+			var button = new THREE.Mesh( geometry, material );
 			button.position.set( x, - y, 0 );
 			button.scale.set( fav.ui.height, fav.ui.height, 1 );
 			button.userData.position = new THREE.Vector2( x, y );
+			button.userData.favorite = fav;
+			button.addEventListener('mouseover', function(e) {
+				if (this.material) {
+					this.material.color.set( 0x0f0ff );
+					this.material.needsUpdate = true;
+				}
+			});
+
+			button.addEventListener('mouseout', function(e) {
+				if (this.material) {
+					this.material.color.set( 0xffffff );	
+					this.material.needsUpdate = true;
+				}
+			});
+
+			button.addEventListener('click', function(e) {
+				VRManager.load(this.userData.favorite.url);
+			});
 
 			layout.add(button);
 		}
@@ -63,16 +75,6 @@ VRHud.prototype.initLayout = function(dom, camera, favorites) {
 		createMeshes()
 		bend( layout, 500 );
 	});
-			
 
 	return layout;
 }
-
-VRHud.Layout = function() {
-	THREE.Group.call(this);
-}
-
-VRHud.Layout.prototype = Object.create( THREE.Group.prototype );
-
-
-

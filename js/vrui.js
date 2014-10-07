@@ -6,14 +6,13 @@ function VRUi(container) {
 	this.active = false;
 	this.settings = null;
 	this.hud = new VRHud();
+	this.cursor = new VRCursor();
 	this.scene = this.camera = this.controls = this.renderer = this.effect = null;
 	
 	// main
 	this.initSettings();
 	this.initRenderer();
-		
-	self.start();
-
+	
 	return this;
 };
 
@@ -73,11 +72,12 @@ VRUi.prototype.initSettings = function() {
 
 	Promise.all([userSettingsP, uiSettingsP]).then(function(values) {
 		self.settings = parseSettings(values);
-
-		//self.scene.add( self.hud.initLayout(this.renderer.domElement, this.scene) );
-		
-		self.scene.add( self.hud.initLayout(self.renderer.domElement, self.scene, self.settings.favorites) );
-		console.log(self.scene.children);
+		var hudLayout = self.hud.init(self.renderer.domElement, self.camera, self.settings.favorites);
+		var cursorLayout = self.cursor.init(self.renderer.domElement, self.camera, hudLayout);
+		self.hudLayout = hudLayout;
+		self.scene.add(hudLayout);
+		self.scene.add(cursorLayout);
+		self.start();
 	});
 }
 
@@ -106,8 +106,8 @@ VRUi.prototype.animate = function() {
 	if (!this.active) {
 		return false;
 	}
-	this.effect.render( this.scene, this.camera );
 	this.controls.update();
+	this.effect.render(this.scene, this.camera);
 
 	requestAnimationFrame(this.animate.bind(this));
 }
